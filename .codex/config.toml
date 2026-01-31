@@ -1,0 +1,2 @@
+notify          = ["${CODEX_HOME}/notify-codex.sh"]
+
