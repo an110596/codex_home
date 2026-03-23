@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/codex/codex_tui_log_line.schema.json",
+  "title": "codex-tui.log line (raw string)",
+  "description": "Schema for one raw line in log/codex-tui.log (ANSI escape sequences may appear in older lines).",
+  "type": "string",
+  "pattern": "^(?:\\u001b\\[[0-9;]*m)?\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z(?:\\u001b\\[[0-9;]*m)?\\s+(?:\\u001b\\[[0-9;]*m)?(?:INFO|WARN|ERROR)(?:\\u001b\\[[0-9;]*m)?\\s+.*$"
+}

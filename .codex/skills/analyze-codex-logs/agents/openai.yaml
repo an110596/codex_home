@@ -1,0 +1,4 @@
+interface:
+  display_name: "Analyze Codex Logs"
+  short_description: "Analyze Codex CLI logs and return actionable usage feedback."
+  default_prompt: "Use $analyze-codex-logs to inspect log/ and sessions/, then deliver evidence-backed coaching on efficiency, prompt quality, tool strategy, reliability, and token usage."

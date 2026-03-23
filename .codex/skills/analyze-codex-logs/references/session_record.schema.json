@@ -1,0 +1,481 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/codex/session_record.schema.json",
+  "title": "Codex Session JSONL Record",
+  "description": "Schema for one line in sessions/**/rollout-*.jsonl",
+  "type": "object",
+  "required": ["timestamp", "type", "payload"],
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["session_meta", "turn_context", "event_msg", "response_item", "compacted"]
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "type": { "const": "session_meta" } } },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/session_meta_payload" } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "turn_context" } } },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/turn_context_payload" } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "event_msg" } } },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/event_msg_payload" } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "response_item" } } },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/response_item_payload" } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "compacted" } } },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/compacted_payload" } } }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "session_meta_payload": {
+      "type": "object",
+      "required": ["id", "timestamp", "cwd", "originator", "cli_version"],
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "cwd": { "type": "string" },
+        "originator": { "type": "string" },
+        "cli_version": { "type": "string" },
+        "instructions": { "type": "string" },
+        "source": {
+          "anyOf": [
+            { "type": "string" },
+            {
+              "type": "object",
+              "properties": {
+                "subagent": {
+                  "type": "object",
+                  "properties": {
+                    "thread_spawn": {
+                      "type": "object",
+                      "properties": {
+                        "parent_thread_id": { "type": "string" },
+                        "depth": { "type": "integer" },
+                        "agent_nickname": { "type": "string" },
+                        "agent_role": { "type": "string" }
+                      },
+                      "additionalProperties": true
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "additionalProperties": true
+            }
+          ]
+        },
+        "model_provider": { "type": "string" },
+        "agent_nickname": { "type": "string" },
+        "agent_role": { "type": "string" },
+        "base_instructions": {
+          "type": "object",
+          "properties": {
+            "text": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "git": {
+          "type": "object",
+          "properties": {
+            "commit_hash": { "type": "string" },
+            "branch": { "type": "string" },
+            "repository_url": { "type": "string" }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "turn_context_payload": {
+      "type": "object",
+      "required": ["cwd", "approval_policy", "sandbox_policy", "model"],
+      "properties": {
+        "turn_id": { "type": "string" },
+        "cwd": { "type": "string" },
+        "current_date": { "type": "string" },
+        "timezone": { "type": "string" },
+        "approval_policy": { "type": "string" },
+        "sandbox_policy": {
+          "anyOf": [
+            { "type": "string" },
+            {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string" },
+                "mode": { "type": "string" },
+                "network_access": { "type": "boolean" },
+                "writable_roots": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              },
+              "additionalProperties": true
+            }
+          ]
+        },
+        "model": { "type": "string" },
+        "personality": { "type": "string" },
+        "collaboration_mode": {
+          "anyOf": [
+            { "type": "string" },
+            {
+              "type": "object",
+              "properties": {
+                "mode": { "type": "string" },
+                "settings": {
+                  "type": "object",
+                  "properties": {
+                    "model": { "type": "string" },
+                    "reasoning_effort": { "type": "string" },
+                    "developer_instructions": { "type": "string" }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "additionalProperties": true
+            }
+          ]
+        },
+        "realtime_active": { "type": "boolean" },
+        "effort": { "type": "string" },
+        "summary": { "type": ["string", "null"] },
+        "user_instructions": { "type": ["string", "null"] },
+        "truncation_policy": {
+          "type": "object",
+          "properties": {
+            "mode": { "type": "string" },
+            "limit": { "type": ["integer", "null"] }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "event_msg_payload": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "task_started",
+            "task_complete",
+            "token_count",
+            "turn_aborted",
+            "user_message",
+            "agent_message",
+            "agent_reasoning"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "task_started" } } },
+          "then": {
+            "required": ["turn_id", "model_context_window"],
+            "properties": {
+              "turn_id": { "type": "string" },
+              "model_context_window": { "type": "integer" },
+              "collaboration_mode_kind": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "task_complete" } } },
+          "then": {
+            "required": ["turn_id"],
+            "properties": {
+              "turn_id": { "type": "string" },
+              "last_agent_message": { "type": ["string", "null"] }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "token_count" } } },
+          "then": {
+            "properties": {
+              "info": {
+                "anyOf": [
+                  { "type": "null" },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "model_context_window": { "type": ["integer", "null"] },
+                      "last_token_usage": {
+                        "type": "object",
+                        "properties": {
+                          "input_tokens": { "type": ["integer", "null"] },
+                          "cached_input_tokens": { "type": ["integer", "null"] },
+                          "output_tokens": { "type": ["integer", "null"] },
+                          "reasoning_output_tokens": { "type": ["integer", "null"] },
+                          "total_tokens": { "type": ["integer", "null"] }
+                        },
+                        "additionalProperties": true
+                      },
+                      "total_token_usage": {
+                        "type": "object",
+                        "properties": {
+                          "input_tokens": { "type": ["integer", "null"] },
+                          "cached_input_tokens": { "type": ["integer", "null"] },
+                          "output_tokens": { "type": ["integer", "null"] },
+                          "reasoning_output_tokens": { "type": ["integer", "null"] },
+                          "total_tokens": { "type": ["integer", "null"] }
+                        },
+                        "additionalProperties": true
+                      }
+                    },
+                    "additionalProperties": true
+                  }
+                ]
+              },
+              "rate_limits": {
+                "type": "object",
+                "properties": {
+                  "limit_id": { "type": ["string", "null"] }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "turn_aborted" } } },
+          "then": {
+            "required": ["turn_id", "reason"],
+            "properties": {
+              "turn_id": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "user_message" } } },
+          "then": {
+            "required": ["message"],
+            "properties": {
+              "kind": { "type": "string" },
+              "message": { "type": "string" },
+              "images": { "type": "array", "items": {} },
+              "local_images": { "type": "array", "items": {} },
+              "text_elements": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "placeholder": { "type": "string" },
+                    "byte_range": {
+                      "type": "object",
+                      "properties": {
+                        "start": { "type": "integer" },
+                        "end": { "type": "integer" }
+                      },
+                      "required": ["start", "end"],
+                      "additionalProperties": true
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "agent_message" } } },
+          "then": {
+            "required": ["message"],
+            "properties": {
+              "message": { "type": "string" },
+              "phase": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "agent_reasoning" } } },
+          "then": {
+            "required": ["text"],
+            "properties": {
+              "text": { "type": "string" }
+            }
+          }
+        }
+      ],
+      "additionalProperties": true
+    },
+    "response_item_payload": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "message",
+            "reasoning",
+            "function_call",
+            "function_call_output",
+            "web_search_call",
+            "custom_tool_call",
+            "custom_tool_call_output",
+            "ghost_snapshot"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "message" } } },
+          "then": {
+            "required": ["role", "content"],
+            "properties": {
+              "role": { "type": "string", "enum": ["user", "assistant", "developer"] },
+              "phase": { "type": "string" },
+              "content": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string", "enum": ["input_text", "output_text"] },
+                    "text": { "type": "string" }
+                  },
+                  "required": ["type"],
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "reasoning" } } },
+          "then": {
+            "properties": {
+              "summary": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "text": { "type": "string" }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "content": { "type": ["string", "null"] },
+              "encrypted_content": { "type": ["string", "null"] }
+            },
+            "required": ["summary"]
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "function_call" } } },
+          "then": {
+            "required": ["name", "arguments", "call_id"],
+            "properties": {
+              "name": { "type": "string" },
+              "arguments": { "type": "string" },
+              "call_id": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "function_call_output" } } },
+          "then": {
+            "required": ["call_id", "output"],
+            "properties": {
+              "call_id": { "type": "string" },
+              "output": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "web_search_call" } } },
+          "then": {
+            "required": ["status", "action"],
+            "properties": {
+              "status": { "type": "string" },
+              "action": {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string" },
+                  "query": { "type": "string" },
+                  "queries": { "type": "array", "items": { "type": "string" } },
+                  "url": { "type": "string" },
+                  "pattern": { "type": "string" }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "custom_tool_call" } } },
+          "then": {
+            "required": ["status", "call_id", "name", "input"],
+            "properties": {
+              "status": { "type": "string" },
+              "call_id": { "type": "string" },
+              "name": { "type": "string" },
+              "input": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "custom_tool_call_output" } } },
+          "then": {
+            "required": ["call_id", "output"],
+            "properties": {
+              "call_id": { "type": "string" },
+              "output": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "ghost_snapshot" } } },
+          "then": {
+            "required": ["ghost_commit"],
+            "properties": {
+              "ghost_commit": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "parent": { "type": "string" },
+                  "preexisting_untracked_files": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "preexisting_untracked_dirs": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                },
+                "required": ["id"],
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": true
+    },
+    "compacted_payload": {
+      "type": "object",
+      "required": ["message"],
+      "properties": {
+        "message": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  }
+}
